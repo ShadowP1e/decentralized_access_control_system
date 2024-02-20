@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control Panel</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+
+        .container {
+            display: flex;
+        }
+
+        .navbar {
+            background-color: #333;
+            color: #fff;
+            padding: 20px;
+            width: 250px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .logo {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+        }
+
+        .nav-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .nav-list li {
+            margin-bottom: 10px;
+        }
+
+        .nav-list a {
+            text-decoration: none;
+            color: #fff;
+            font-weight: bold;
+        }
+
+        .nav-list a:hover {
+            text-decoration: underline;
+        }
+
+        .content {
+            padding: 20px;
+            flex-grow: 1;
+        }
+
+        .files-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .files-table th, .files-table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+
+        .files-table th {
+            background-color: #f2f2f2;
+        }
+        .logout-button {
+            text-decoration: none;
+            background-color: #333;
+            color: #fff;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px;
+            max-height: 20px;
+            text-align: center;
+        }
+
+        .logout-button:hover {
+            background-color: #555;
+        }
+        .action-buttons {
+            margin-bottom: 20px;
+        }
+
+        .submit-button,
+        .create-directory-button,
+        .delete-directory-button,
+        .create-file-button,
+        .delete-file-button {
+            background-color: #007bff;
+            color: #fff;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+
+        .submit-button:hover,
+        .create-directory-button:hover,
+        .delete-directory-button:hover,
+        .create-file-button:hover,
+        .delete-file-button:hover {
+            background-color: #0056b3;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 300px;
+            width: 100%;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
+            z-index: 1;
+        }
+
+        .modal-content {
+            text-align: center;
+        }
+
+        .close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 1.5em;
+            color: #555;
+            cursor: pointer;
+        }
+        .form-input {
+            margin-bottom: 15px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <div id="ModalCreateDirectory" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('ModalCreateDirectory')">&times;</span>
+            <h2>Create directory</h2>
+            <form id="CreateDirectoryForm">
+                <input id="createDirectoryId" name="title" class="form-input"><br>
+                <button type="button" onclick="CreateDirectory()" class="submit-button">Create</button>
+            </form>
+        </div>
+    </div>
+    <div id="ModalDeleteDirectory" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('ModalDeleteDirectory')">&times;</span>
+            <h2>Delete directory</h2>
+            <form>
+                <input id="deleteDirectoryId" name="title" class="form-input"><br>
+                <button type="button" onclick="DeleteDirectory()" class="submit-button">Delete</button>
+            </form>
+        </div>
+    </div>
+    <div id="ModalCreateFile" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('ModalCreateFile')">&times;</span>
+            <h2>Save file</h2>
+            <form>
+                <label>Title:</label><input name="title" id="createFileTitleId" class="form-input"><br>
+                <label>Directory:</label><input name="directory" id="createFileDirectoryId" class="form-input"><br>
+                <label>Roles:</label><input name="roles" id="createFileRolesId" class="form-input"><br>
+                <input type="file" id="createFileFileId">
+                <p></p>
+                <button type="button" onclick="CreateFile()" class="submit-button">Save</button>
+            </form>
+        </div>
+    </div>
+    <div id="ModalDeleteFile" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('ModalDeleteFile')">&times;</span>
+            <h2>Delete file</h2>
+            <form>
+                <label>Title:</label><input name="title" id="deleteFileTitleId" class="form-input"><br>
+                <label>Directory:</label><input name="directory" id="deleteFileDirectoryId" class="form-input"><br>
+                <button type="button" onclick="DeleteFile()" class="submit-button">delete</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="container">
+        <nav class="navbar">
+            <div class="logo">Control Panel</div>
+            <ul class="nav-list">
+                {% for directory in directories %}
+                <li><a href="/panel/{{directory}}">{{directory}}</a></li>
+                {% endfor %}
+            </ul>
+        </nav>
+        <div class="content">
+            <p>Your role: {{role}}</p>
+            <div class="action-buttons">
+                <button onclick="openModal('ModalCreateDirectory')" class="create-directory-button">Create Directory</button>
+                <button onclick="openModal('ModalDeleteDirectory')" class="delete-directory-button">Delete Directory</button>
+                <button onclick="openModal('ModalCreateFile')" class="create-file-button">Create File</button>
+                <button onclick="openModal('ModalDeleteFile')" class="delete-file-button">Delete File</button>
+            </div>
+            {% if files %}
+            <h2>Files</h2>
+            <table class="files-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Permissions</th>
+                        <th>Open</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for file in files %}
+                    <tr>
+                        <td>{{file[0]}}</td>
+                        <td>{{file[1]}}</td>
+                        <td><a href="#" onclick="OpenFile('{{file[0]}}', '{{directory}}')">Open/Download</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            {% if directory %}
+            <h2>Directory empty</h2>
+            {% else %}
+            <h2>Choose directory</h2>
+            {% endif %}
+            {% endif %}
+        </div>
+        <a href="/logout" class="logout-button">Logout</a>
+    </div>
+    <script>
+        function openModal(id) {
+            document.getElementById(id).style.display = "block";
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).style.display = "none";
+        }
+
+        function CreateDirectory() {
+            const directoryInput = document.getElementById("createDirectoryId");
+            title = directoryInput.value;
+            if (directoryInput) {
+                let formData = new FormData();
+                formData.set("title", title);
+                console.log(...formData);
+                fetch('http://127.0.0.1/directory', {
+                    method: 'POST',
+                    credentials: 'include',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log("Server response:", data);
+                    if (data.status === 'ok') {
+                        window.location.reload();
+                    }
+                    else{
+                        alert(data.status)
+                    }
+                 })
+                .catch(error => console.error('Error:', error));
+            } else {
+                console.error('Error');
+            }
+        }
+
+        function DeleteDirectory() {
+            const directoryInput = document.getElementById("deleteDirectoryId");
+            title = directoryInput.value;
+            if (directoryInput) {
+                let formData = new FormData();
+                formData.set("title", title);
+                console.log(...formData);
+                fetch('http://127.0.0.1/directory', {
+                    method: 'DELETE',
+                    credentials: 'include',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log("Server response:", data);
+                    if (data.status === 'ok') {
+                        window.location.reload();
+                    }
+                    else{
+                        alert(data.status)
+                    }
+                 })
+                .catch(error => console.error('Error:', error));
+            } else {
+                console.error('Error');
+            }
+        }
+        function CreateFile() {
+            const titleInput = document.getElementById("createFileTitleId");
+            const directoryInput = document.getElementById("createFileDirectoryId");
+            const rolesInput = document.getElementById("createFileRolesId");
+            const fileInput = document.getElementById("createFileFileId");
+            title = titleInput.value;
+            directory = directoryInput.value;
+            roles = rolesInput.value;
+            file = fileInput.files[0];
+            if (directoryInput) {
+                let formData = new FormData();
+                formData.set("title", title);
+                formData.set("directory", directory);
+                formData.set("roles", roles);
+                formData.set("file", file);
+                console.log(...formData);
+                fetch('http://127.0.0.1/file', {
+                    method: 'POST',
+                    credentials: 'include',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log("Server response:", data);
+                    if (data.status === 'ok') {
+                        window.location.reload();
+                    }
+                    else{
+                        alert(data.status)
+                    }
+                 })
+                .catch(error => console.error('Error:', error));
+            } else {
+                console.error('Error');
+            }
+        }
+
+
+        function DeleteFile() {
+            const titleInput = document.getElementById("deleteFileTitleId");
+            const directoryInput = document.getElementById("deleteFileDirectoryId");
+            title = titleInput.value;
+            directory = directoryInput.value;
+            if (directoryInput) {
+                let formData = new FormData();
+                formData.set("title", title);
+                formData.set("directory", directory);
+                console.log(...formData);
+                fetch('http://127.0.0.1/file', {
+                    method: 'DELETE',
+                    credentials: 'include',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log("Server response:", data);
+                    if (data.status === 'ok') {
+                        window.location.reload();
+                    }
+                    else{
+                        alert(data.status)
+                    }
+                 })
+                .catch(error => console.error('Error:', error));
+            } else {
+                console.error('Error');
+            }
+        }
+
+        function OpenFile(title, directory){
+            fetch('http://127.0.0.1/file?title='+title+'&directory='+directory, {
+                method: 'GET',
+                credentials: 'include'
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log("Server response:", data);
+                if (data.status === 'ok') {
+                    window.open(data.url, '_blank');
+                }
+                else{
+                    alert(data.status)
+                }
+             })
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
+</body>
+</html>
